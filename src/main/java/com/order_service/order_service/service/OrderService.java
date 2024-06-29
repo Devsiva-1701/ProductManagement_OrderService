@@ -1,4 +1,4 @@
-package com.order_service.order_service.order_service;
+package com.order_service.order_service.service;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -19,16 +19,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.order_service.order_service.cart.CartEmptyException;
-import com.order_service.order_service.order_repo.CartOrderRepository;
-import com.order_service.order_service.product.Product;
+import com.order_service.order_service.DAO.entity.Order;
+import com.order_service.order_service.DAO.entity.OrderProductDetails;
+import com.order_service.order_service.DAO.entity.Product;
+import com.order_service.order_service.DAO.repository.CartOrderRepository;
+import com.order_service.order_service.DTO.ProductDTO;
+import com.order_service.order_service.exceptions.CartEmptyException;
 
 @Service
 public class OrderService {
     private String cartID = "C9812R";
 
-    HashMap<String , Long> customerCart = new HashMap<>();
-    // ArrayList<CartProduct> cartProds = new ArrayList<>();
+    HashMap<Long , Long> customerCart = new HashMap<>();
 
     @Autowired
     CartOrderRepository cartOrderRepo;
@@ -36,25 +38,27 @@ public class OrderService {
     @Autowired
     RestTemplate restTemplate;
 
-    public String addProdcutToCart(String prodID , Long quantity)
+    public String addProdcutToCart(Long prodID , Long quantity)
     {
         HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
             headers.put("Authorization", new ArrayList<>());
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ParameterizedTypeReference<ArrayList<Product>> responseType = new ParameterizedTypeReference<ArrayList<Product>>() {};
+            ParameterizedTypeReference<ArrayList<ProductDTO>> responseType = new ParameterizedTypeReference<ArrayList<ProductDTO>>() {};
 
-            ResponseEntity<ArrayList<Product>> responseEntity = restTemplate.exchange("http://localhost:8080/products/getProducts", HttpMethod.GET, entity, responseType);
+            ResponseEntity<ArrayList<ProductDTO>> responseEntity = restTemplate.exchange("http://localhost:8080/products/getProductsBuyers", HttpMethod.GET, entity, responseType);
 
-            ArrayList<Product> products = responseEntity.getBody();
+            ArrayList<ProductDTO> productsDTO = responseEntity.getBody();
 
-            if(!products.isEmpty())
+            System.out.println(productsDTO);
+
+            if(!productsDTO.isEmpty())
             {
 
-                products.stream().forEach( product ->{
+                productsDTO.stream().forEach( product ->{
 
-                    if(String.valueOf(product.getId()).equals(prodID))
+                    if(product.getId() == prodID)
                     {
                         customerCart.put(prodID, customerCart.getOrDefault(prodID , 0l)+quantity);
 
@@ -73,7 +77,7 @@ public class OrderService {
 
     }
 
-    public ResponseEntity<Object> buyCartService()
+    public String buyCartService()
     {
             Long totalCost = 0l;
             Long totalCount = 0l;
@@ -91,7 +95,7 @@ public class OrderService {
 
             
 
-            Iterator<Map.Entry<String, Long>> iterator = customerCart.entrySet().iterator();
+            Iterator<Map.Entry<Long, Long>> iterator = customerCart.entrySet().iterator();
             
 
             HttpHeaders headers = new HttpHeaders();
@@ -101,11 +105,13 @@ public class OrderService {
 
             ParameterizedTypeReference<ArrayList<Product>> responseType = new ParameterizedTypeReference<ArrayList<Product>>() {};
 
-            ResponseEntity<ArrayList<Product>> responseEntity = restTemplate.exchange("http://localhost:8080/products/getProducts", HttpMethod.GET, entity, responseType);
+            ResponseEntity<ArrayList<Product>> responseEntity = restTemplate.exchange("http://localhost:8080/products/getProductsBuyers", HttpMethod.GET, entity, responseType);
 
             System.out.println(responseEntity.getBody());
 
             ArrayList<Product> products = responseEntity.getBody();
+            ArrayList<Product> buyProductsList =  new ArrayList<>();
+            
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("mm-ss-SS");
             String currentTime = formatter.format(LocalTime.now());
@@ -114,22 +120,23 @@ public class OrderService {
 
             if(products.isEmpty())
             {
-                return ResponseEntity.ok().body(("No products found in the store...")  );
+                return "No Product Found...";
             }
             else
             {
                 while(iterator.hasNext())
             {
-                Map.Entry<String, Long> cartEntry = iterator.next();
+                Map.Entry<Long, Long> cartEntry = iterator.next();
                 for( Product product : products )
                 {
-                    if(product.getId().equals(cartEntry.getKey()))
+                    if(product.getId() == cartEntry.getKey())
                     {
                         if(product.getStock() >= cartEntry.getValue())
                         {
                         
-                            productDetailsList.add( new OrderProductDetails(product.getId(),product.getProductName() , (product.getStock() - cartEntry.getValue()) ) );
-                            product.setStock(cartEntry.getValue() );
+                            productDetailsList.add( new OrderProductDetails( product.getId() , product.getProductName() , cartEntry.getValue() ) );
+                            product.setStock( product.getStock() - cartEntry.getValue() );
+                            buyProductsList.add(product);
                             totalCost += product.getPrice() * cartEntry.getValue();
                             totalCount ++;
                             iterator.remove();
@@ -154,15 +161,18 @@ public class OrderService {
 
             headers_2.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<List<Product>> requestEntity = new HttpEntity<List<Product>>(products , headers_2);
+            HttpEntity<List<Product>> requestEntity = new HttpEntity<List<Product>>(buyProductsList , headers_2);
 
             ResponseEntity<String> response_entity = restTemplate.exchange("http://localhost:8080/products/updatePurchase", HttpMethod.PUT , requestEntity ,String.class);
             
             String response = response_entity.getBody();
 
-            System.out.println(products);
-            System.out.println(response);
-            return ResponseEntity.ok().body( "Purchase Successful..." );
+            // System.out.println(products);
+            // System.out.println(response);
+            // return "Purchase Successfull...";
+
+            return response;
+
             }
 
             

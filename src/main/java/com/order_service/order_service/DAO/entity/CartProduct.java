@@ -1,4 +1,4 @@
-package com.order_service.order_service.order_service;
+package com.order_service.order_service.DAO.entity;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,14 +10,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderProductDetails {
+public class CartProduct {
 
-    private String productID;
 
-    private String productName;
+    private Long cartId;
+    private String productId;
+    private String quantity;
 
-    private Long quantity;
-    
-    
+
     
 }

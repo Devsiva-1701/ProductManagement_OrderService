@@ -1,4 +1,4 @@
-package com.order_service.order_service.order_service;
+package com.order_service.order_service.DAO.entity;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.order_service.order_service.cart;
+package com.order_service.order_service.exceptions;
 
 public class CartEmptyException extends Exception {
 

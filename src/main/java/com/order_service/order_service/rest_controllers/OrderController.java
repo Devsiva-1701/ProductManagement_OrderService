@@ -1,11 +1,15 @@
-package com.order_service.order_service.order_service;
+package com.order_service.order_service.rest_controllers;
 
 import org.springframework.web.bind.annotation.RestController;
+
+import com.order_service.order_service.DAO.entity.Order;
+import com.order_service.order_service.service.OrderService;
 
 import java.util.ArrayList;
 
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +24,7 @@ public class OrderController {
     OrderService orderService;
 
     @GetMapping("/addToCart/{prodID}")
-    public String addProductToCart( @PathVariable String prodID , @RequestBody Long quantity ) {
+    public String addProductToCart( @PathVariable Long prodID , @RequestParam Long quantity ) {
 
         return orderService.addProdcutToCart(prodID, quantity);
         
