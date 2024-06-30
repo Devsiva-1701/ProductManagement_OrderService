@@ -10,12 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,6 +32,9 @@ import com.order_service.order_service.exceptions.CartEmptyException;
 public class OrderService {
     private String cartID = "C9812R";
 
+    @Value("${spring.kafka.template.default-topic}")
+    private String topic;
+
     HashMap<Long , Long> customerCart = new HashMap<>();
 
     @Autowired
@@ -37,6 +42,9 @@ public class OrderService {
 
     @Autowired
     RestTemplate restTemplate;
+
+    @Autowired
+    KafkaTemplate<String , Order> kafkaTemplate;
 
     public String addProdcutToCart(Long prodID , Long quantity)
     {
@@ -134,7 +142,7 @@ public class OrderService {
                         if(product.getStock() >= cartEntry.getValue())
                         {
                         
-                            productDetailsList.add( new OrderProductDetails( product.getId() , product.getProductName() , cartEntry.getValue() ) );
+                            productDetailsList.add( new OrderProductDetails( orderID , product.getId() , product.getProductName() , cartEntry.getValue() ) );
                             product.setStock( product.getStock() - cartEntry.getValue() );
                             buyProductsList.add(product);
                             totalCost += product.getPrice() * cartEntry.getValue();
@@ -171,6 +179,10 @@ public class OrderService {
             // System.out.println(response);
             // return "Purchase Successfull...";
 
+            System.out.println(order.getProductsMap());
+
+            sendOrderDetails( topic , order);
+
             return response;
 
             }
@@ -181,6 +193,12 @@ public class OrderService {
     public ArrayList<Order>  showPurchaseHistory()
     {
         return (ArrayList<Order>) cartOrderRepo.findByCartId(cartID);
+    }
+
+    public void sendOrderDetails( String topic , Order order )
+    {
+        kafkaTemplate.send( topic , order );   
+        System.out.println("Message sent...");    
     }
     
 }

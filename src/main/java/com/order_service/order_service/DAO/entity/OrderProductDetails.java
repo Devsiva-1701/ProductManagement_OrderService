@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderProductDetails {
 
+    private String orderId;
+
     private Long productID;
 
     private String productName;

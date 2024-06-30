@@ -1,6 +1,6 @@
 package com.order_service.order_service.DAO.entity;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -24,7 +24,7 @@ public class Order {
 
     private String cartId;
 
-    private ArrayList<OrderProductDetails> productsMap;
+    private List<OrderProductDetails> productsMap;
 
     
 }
